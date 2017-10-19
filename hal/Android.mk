@@ -78,7 +78,7 @@ LOCAL_SHARED_LIBRARIES := \
 	liblog \
 	libcutils \
 	libtinyalsa \
-	libtinycompress \
+	libtinycompress_vendor \
 	libaudioroute \
 	libdl \
 	libexpat
@@ -95,6 +95,7 @@ LOCAL_C_INCLUDES += \
 
 LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
 LOCAL_ADDITIONAL_DEPENDENCIES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
+LOCAL_CFLAGS += -DUSE_VENDOR_EXTN
 
 ifeq ($(strip $(AUDIO_FEATURE_ENABLED_SMART_PA_TFA_98XX)),true)
     LOCAL_SHARED_LIBRARIES += libexTfa98xx
