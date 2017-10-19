@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2013-2016, The Linux Foundation. All rights reserved.
- * Not a contribution.
- *
- * Copyright (C) 2013 The Android Open Source Project
+ * Copyright (C) 2014-2016 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,6 +57,7 @@ struct voice_session {
 struct voice {
     struct voice_session session[MAX_VOICE_SESSIONS];
     int tty_mode;
+    bool hac;
     bool mic_mute;
     float volume;
     bool in_call;
@@ -81,8 +79,8 @@ int voice_set_parameters(struct audio_device *adev, struct str_parms *parms);
 void voice_get_parameters(struct audio_device *adev, struct str_parms *query,
                           struct str_parms *reply);
 void voice_init(struct audio_device *adev);
-bool voice_is_in_call(const struct audio_device *adev);
-bool voice_is_in_call_rec_stream(const struct stream_in *in);
+bool voice_is_in_call(struct audio_device *adev);
+bool voice_is_in_call_rec_stream(struct stream_in *in);
 int voice_set_mic_mute(struct audio_device *dev, bool state);
 bool voice_get_mic_mute(struct audio_device *dev);
 int voice_set_volume(struct audio_device *adev, float volume);
@@ -93,7 +91,6 @@ int voice_check_and_set_incall_music_usecase(struct audio_device *adev,
 int voice_check_and_stop_incall_rec_usecase(struct audio_device *adev,
                                             struct stream_in *in);
 void voice_update_devices_for_all_voice_usecases(struct audio_device *adev);
-snd_device_t voice_get_incall_rec_snd_device(snd_device_t in_snd_device);
 void voice_set_sidetone(struct audio_device *adev,
                        snd_device_t out_snd_device,
                        bool enable);

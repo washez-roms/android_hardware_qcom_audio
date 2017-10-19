@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2013-2014, The Linux Foundation. All rights reserved.
- * Not a Contribution.
- *
- * Copyright (C) 2013 The Android Open Source Project
+ * Copyright (C) 2014 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +49,7 @@ static const char *equalizer_preset_names[] = {
                                         "Jazz",
                                         "Pop",
                                         "Rock"
-};
+					};
 
 static const uint32_t equalizer_band_freq_range[NUM_EQ_BANDS][2] = {
                                        {30000, 120000},
@@ -87,7 +84,7 @@ const uint16_t equalizer_band_presets_freq[NUM_EQ_BANDS] = {
 
 int equalizer_get_band_level(equalizer_context_t *context, int32_t band)
 {
-    ALOGV("%s: ctxt %p, band: %d level: %d", __func__, context, band,
+    ALOGV("%s: band: %d level: %d", __func__, band,
            context->band_levels[band] * 100);
     return context->band_levels[band] * 100;
 }
@@ -95,7 +92,7 @@ int equalizer_get_band_level(equalizer_context_t *context, int32_t band)
 int equalizer_set_band_level(equalizer_context_t *context, int32_t band,
                              int32_t level)
 {
-    ALOGV("%s: ctxt %p, band: %d, level: %d", __func__, context, band, level);
+    ALOGV("%s: band: %d, level: %d", __func__, band, level);
     if (level > 0) {
         level = (int)((level+50)/100);
     } else {
@@ -113,35 +110,31 @@ int equalizer_set_band_level(equalizer_context_t *context, int32_t band,
         offload_eq_send_params(context->ctl, &context->offload_eq,
                                OFFLOAD_SEND_EQ_ENABLE_FLAG |
                                OFFLOAD_SEND_EQ_BANDS_LEVEL);
-    if (context->hw_acc_fd > 0)
-        hw_acc_eq_send_params(context->hw_acc_fd, &context->offload_eq,
-                              OFFLOAD_SEND_EQ_ENABLE_FLAG |
-                              OFFLOAD_SEND_EQ_BANDS_LEVEL);
     return 0;
 }
 
-int equalizer_get_center_frequency(equalizer_context_t *context, int32_t band)
+int equalizer_get_center_frequency(equalizer_context_t *context __unused, int32_t band)
 {
-    ALOGV("%s: ctxt %p, band: %d", __func__, context, band);
+    ALOGV("%s: band: %d", __func__, band);
     return (equalizer_band_freq_range[band][0] +
             equalizer_band_freq_range[band][1]) / 2;
 }
 
-int equalizer_get_band_freq_range(equalizer_context_t *context, int32_t band,
+int equalizer_get_band_freq_range(equalizer_context_t *context __unused, int32_t band,
                                   uint32_t *low, uint32_t *high)
 {
-    ALOGV("%s: ctxt %p, band: %d", __func__, context, band);
+    ALOGV("%s: band: %d", __func__, band);
     *low = equalizer_band_freq_range[band][0];
     *high = equalizer_band_freq_range[band][1];
    return 0;
 }
 
-int equalizer_get_band(equalizer_context_t *context, uint32_t freq)
+int equalizer_get_band(equalizer_context_t *context __unused, uint32_t freq)
 {
     int i;
 
-    ALOGV("%s: ctxt %p, freq: %d", __func__, context, freq);
-    for(i = 0; i < NUM_EQ_BANDS; i++) {
+    ALOGV("%s: freq: %d", __func__, freq);
+    for (i = 0; i < NUM_EQ_BANDS; i++) {
         if (freq <= equalizer_band_freq_range[i][1]) {
             return i;
         }
@@ -151,7 +144,7 @@ int equalizer_get_band(equalizer_context_t *context, uint32_t freq)
 
 int equalizer_get_preset(equalizer_context_t *context)
 {
-    ALOGV("%s: ctxt %p, preset: %d", __func__, context, context->preset);
+    ALOGV("%s: preset: %d", __func__, context->preset);
     return context->preset;
 }
 
@@ -159,7 +152,7 @@ int equalizer_set_preset(equalizer_context_t *context, int preset)
 {
     int i;
 
-    ALOGV("%s: ctxt %p, preset: %d", __func__, context, preset);
+    ALOGV("%s: preset: %d", __func__, preset);
     context->preset = preset;
     for (i=0; i<NUM_EQ_BANDS; i++)
         context->band_levels[i] =
@@ -174,18 +167,13 @@ int equalizer_set_preset(equalizer_context_t *context, int preset)
         offload_eq_send_params(context->ctl, &context->offload_eq,
                                OFFLOAD_SEND_EQ_ENABLE_FLAG |
                                OFFLOAD_SEND_EQ_PRESET);
-    if(context->hw_acc_fd > 0)
-        hw_acc_eq_send_params(context->hw_acc_fd, &context->offload_eq,
-                              OFFLOAD_SEND_EQ_ENABLE_FLAG |
-                              OFFLOAD_SEND_EQ_PRESET);
     return 0;
 }
 
-const char * equalizer_get_preset_name(equalizer_context_t *context,
+const char * equalizer_get_preset_name(equalizer_context_t *context __unused,
                                        int32_t preset)
 {
-    ALOGV("%s: ctxt %p, preset: %s", __func__, context,
-                        equalizer_preset_names[preset]);
+    ALOGV("%s: preset: %s", __func__, equalizer_preset_names[preset]);
     if (preset == PRESET_CUSTOM) {
         return "Custom";
     } else {
@@ -193,9 +181,9 @@ const char * equalizer_get_preset_name(equalizer_context_t *context,
     }
 }
 
-int equalizer_get_num_presets(equalizer_context_t *context)
+int equalizer_get_num_presets(equalizer_context_t *context __unused)
 {
-    ALOGV("%s: ctxt %p, presets_num: %d", __func__, context,
+    ALOGV("%s: presets_num: %d", __func__,
            sizeof(equalizer_preset_names)/sizeof(char *));
     return sizeof(equalizer_preset_names)/sizeof(char *);
 }
@@ -212,7 +200,7 @@ int equalizer_get_parameter(effect_context_t *context, effect_param_t *p,
     void *value = p->data + voffset;
     int i;
 
-    ALOGV("%s: ctxt %p, param %d", __func__, eq_ctxt, param);
+    ALOGV("%s", __func__);
 
     p->status = 0;
 
@@ -264,15 +252,18 @@ int equalizer_get_parameter(effect_context_t *context, effect_param_t *p,
 
     switch (param) {
     case EQ_PARAM_NUM_BANDS:
+	ALOGV("%s: EQ_PARAM_NUM_BANDS", __func__);
         *(uint16_t *)value = (uint16_t)NUM_EQ_BANDS;
         break;
 
     case EQ_PARAM_LEVEL_RANGE:
+	ALOGV("%s: EQ_PARAM_LEVEL_RANGE", __func__);
         *(int16_t *)value = -1500;
         *((int16_t *)value + 1) = 1500;
         break;
 
     case EQ_PARAM_BAND_LEVEL:
+	ALOGV("%s: EQ_PARAM_BAND_LEVEL", __func__);
         param2 = *param_tmp;
         if (param2 < 0 || param2 >= NUM_EQ_BANDS) {
             p->status = -EINVAL;
@@ -286,6 +277,7 @@ int equalizer_get_parameter(effect_context_t *context, effect_param_t *p,
         break;
 
     case EQ_PARAM_CENTER_FREQ:
+	ALOGV("%s: EQ_PARAM_CENTER_FREQ", __func__);
         param2 = *param_tmp;
         if (param2 < 0 || param2 >= NUM_EQ_BANDS) {
             p->status = -EINVAL;
@@ -299,6 +291,7 @@ int equalizer_get_parameter(effect_context_t *context, effect_param_t *p,
         break;
 
     case EQ_PARAM_BAND_FREQ_RANGE:
+	ALOGV("%s: EQ_PARAM_BAND_FREQ_RANGE", __func__);
         param2 = *param_tmp;
         if (param2 < 0 || param2 >= NUM_EQ_BANDS) {
             p->status = -EINVAL;
@@ -313,21 +306,25 @@ int equalizer_get_parameter(effect_context_t *context, effect_param_t *p,
         break;
 
     case EQ_PARAM_GET_BAND:
+	ALOGV("%s: EQ_PARAM_GET_BAND", __func__);
         param2 = *param_tmp;
         *(uint16_t *)value = (uint16_t)equalizer_get_band(eq_ctxt, param2);
         break;
 
     case EQ_PARAM_CUR_PRESET:
+	ALOGV("%s: EQ_PARAM_CUR_PRESET", __func__);
         *(uint16_t *)value = (uint16_t)equalizer_get_preset(eq_ctxt);
         break;
 
     case EQ_PARAM_GET_NUM_OF_PRESETS:
+	ALOGV("%s: EQ_PARAM_GET_NUM_OF_PRESETS", __func__);
         *(uint16_t *)value = (uint16_t)equalizer_get_num_presets(eq_ctxt);
         break;
 
     case EQ_PARAM_GET_PRESET_NAME:
+	ALOGV("%s: EQ_PARAM_GET_PRESET_NAME", __func__);
         param2 = *param_tmp;
-        ALOGV("%s: EQ_PARAM_GET_PRESET_NAME: param2: %d", __func__, param2);
+	ALOGV("param2: %d", param2);
         if ((param2 < 0 && param2 != PRESET_CUSTOM) ||
             param2 >= equalizer_get_num_presets(eq_ctxt)) {
                 p->status = -EINVAL;
@@ -337,6 +334,13 @@ int equalizer_get_parameter(effect_context_t *context, effect_param_t *p,
                 }
                 break;
         }
+
+        if (p->vsize < 1) {
+            p->status = -EINVAL;
+            android_errorWriteLog(0x534e4554, "37536407");
+            break;
+        }
+
         name = (char *)value;
         strlcpy(name, equalizer_get_preset_name(eq_ctxt, param2), p->vsize - 1);
         name[p->vsize - 1] = 0;
@@ -344,6 +348,7 @@ int equalizer_get_parameter(effect_context_t *context, effect_param_t *p,
         break;
 
     case EQ_PARAM_PROPERTIES: {
+	ALOGV("%s: EQ_PARAM_PROPERTIES", __func__);
         int16_t *prop = (int16_t *)value;
         prop[0] = (int16_t)equalizer_get_preset(eq_ctxt);
         prop[1] = (int16_t)NUM_EQ_BANDS;
@@ -366,6 +371,7 @@ int equalizer_set_parameter(effect_context_t *context, effect_param_t *p,
     equalizer_context_t *eq_ctxt = (equalizer_context_t *)context;
     int voffset = ((p->psize - 1) / sizeof(int32_t) + 1) * sizeof(int32_t);
     void *value = p->data + voffset;
+    int32_t vsize = (int32_t) p->vsize;
     int32_t *param_tmp = (int32_t *)p->data;
     int32_t param = *param_tmp++;
     int32_t preset;
@@ -373,12 +379,17 @@ int equalizer_set_parameter(effect_context_t *context, effect_param_t *p,
     int32_t level;
     int i;
 
-    ALOGV("%s: ctxt %p, param %d", __func__, eq_ctxt, param);
+    ALOGV("%s", __func__);
 
     p->status = 0;
 
     switch (param) {
     case EQ_PARAM_CUR_PRESET:
+	ALOGV("EQ_PARAM_CUR_PRESET");
+        if (vsize < sizeof(int16_t)) {
+           p->status = -EINVAL;
+           break;
+        }
         preset = (int32_t)(*(uint16_t *)value);
 
         if ((preset >= equalizer_get_num_presets(eq_ctxt)) || (preset < 0)) {
@@ -388,6 +399,11 @@ int equalizer_set_parameter(effect_context_t *context, effect_param_t *p,
         equalizer_set_preset(eq_ctxt, preset);
         break;
     case EQ_PARAM_BAND_LEVEL:
+	ALOGV("EQ_PARAM_BAND_LEVEL");
+        if (vsize < sizeof(int16_t)) {
+            p->status = -EINVAL;
+            break;
+        }
         band =  *param_tmp;
         level = (int32_t)(*(int16_t *)value);
         if (band < 0 || band >= NUM_EQ_BANDS) {
@@ -401,6 +417,11 @@ int equalizer_set_parameter(effect_context_t *context, effect_param_t *p,
         equalizer_set_band_level(eq_ctxt, band, level);
         break;
     case EQ_PARAM_PROPERTIES: {
+	ALOGV("EQ_PARAM_PROPERTIES");
+        if (vsize < sizeof(int16_t)) {
+            p->status = -EINVAL;
+            break;
+        }
         int16_t *prop = (int16_t *)value;
         if ((int)prop[0] >= equalizer_get_num_presets(eq_ctxt)) {
             p->status = -EINVAL;
@@ -409,6 +430,13 @@ int equalizer_set_parameter(effect_context_t *context, effect_param_t *p,
         if (prop[0] >= 0) {
             equalizer_set_preset(eq_ctxt, (int)prop[0]);
         } else {
+            if (vsize < (2 + NUM_EQ_BANDS) * sizeof(int16_t)) {
+                android_errorWriteLog(0x534e4554, "37563371");
+                ALOGE("\tERROR EQ_PARAM_PROPERTIES valueSize %d < %d",
+                                  vsize, (2 + NUM_EQ_BANDS) * sizeof(int16_t));
+                p->status = -EINVAL;
+                break;
+            }
             if ((int)prop[1] != NUM_EQ_BANDS) {
                 p->status = -EINVAL;
                 break;
@@ -428,7 +456,7 @@ int equalizer_set_parameter(effect_context_t *context, effect_param_t *p,
 
 int equalizer_set_device(effect_context_t *context,  uint32_t device)
 {
-    ALOGV("%s: ctxt %p, device: 0x%x", __func__, context, device);
+    ALOGV("%s: device: %d", __func__, device);
     equalizer_context_t *eq_ctxt = (equalizer_context_t *)context;
     eq_ctxt->device = device;
     offload_eq_set_device(&(eq_ctxt->offload_eq), device);
@@ -444,7 +472,7 @@ int equalizer_reset(effect_context_t *context)
 
 int equalizer_init(effect_context_t *context)
 {
-    ALOGV("%s: ctxt %p", __func__, context);
+    ALOGV("%s", __func__);
     equalizer_context_t *eq_ctxt = (equalizer_context_t *)context;
 
     context->config.inputCfg.accessMode = EFFECT_BUFFER_ACCESS_READ;
@@ -466,7 +494,6 @@ int equalizer_init(effect_context_t *context)
 
     set_config(context, &context->config);
 
-    eq_ctxt->hw_acc_fd = -1;
     memset(&(eq_ctxt->offload_eq), 0, sizeof(struct eq_params));
     offload_eq_set_preset(&(eq_ctxt->offload_eq), INVALID_PRESET);
 
@@ -477,7 +504,7 @@ int equalizer_enable(effect_context_t *context)
 {
     equalizer_context_t *eq_ctxt = (equalizer_context_t *)context;
 
-    ALOGV("%s: ctxt %p", __func__, context);
+    ALOGV("%s", __func__);
 
     if (!offload_eq_get_enable_flag(&(eq_ctxt->offload_eq))) {
         offload_eq_set_enable_flag(&(eq_ctxt->offload_eq), true);
@@ -485,10 +512,6 @@ int equalizer_enable(effect_context_t *context)
             offload_eq_send_params(eq_ctxt->ctl, &eq_ctxt->offload_eq,
                                    OFFLOAD_SEND_EQ_ENABLE_FLAG |
                                    OFFLOAD_SEND_EQ_BANDS_LEVEL);
-        if (eq_ctxt->hw_acc_fd > 0)
-            hw_acc_eq_send_params(eq_ctxt->hw_acc_fd, &eq_ctxt->offload_eq,
-                                  OFFLOAD_SEND_EQ_ENABLE_FLAG |
-                                  OFFLOAD_SEND_EQ_BANDS_LEVEL);
     }
     return 0;
 }
@@ -497,15 +520,12 @@ int equalizer_disable(effect_context_t *context)
 {
     equalizer_context_t *eq_ctxt = (equalizer_context_t *)context;
 
-    ALOGV("%s:ctxt %p", __func__, eq_ctxt);
+    ALOGV("%s", __func__);
     if (offload_eq_get_enable_flag(&(eq_ctxt->offload_eq))) {
         offload_eq_set_enable_flag(&(eq_ctxt->offload_eq), false);
         if (eq_ctxt->ctl)
             offload_eq_send_params(eq_ctxt->ctl, &eq_ctxt->offload_eq,
                                    OFFLOAD_SEND_EQ_ENABLE_FLAG);
-        if (eq_ctxt->hw_acc_fd > 0)
-            hw_acc_eq_send_params(eq_ctxt->hw_acc_fd, &eq_ctxt->offload_eq,
-                                  OFFLOAD_SEND_EQ_ENABLE_FLAG);
     }
     return 0;
 }
@@ -514,18 +534,13 @@ int equalizer_start(effect_context_t *context, output_context_t *output)
 {
     equalizer_context_t *eq_ctxt = (equalizer_context_t *)context;
 
-    ALOGV("%s: ctxt %p, ctl %p", __func__, eq_ctxt, output->ctl);
+    ALOGV("%s: %p", __func__, output->ctl);
     eq_ctxt->ctl = output->ctl;
-    if (offload_eq_get_enable_flag(&(eq_ctxt->offload_eq))) {
+    if (offload_eq_get_enable_flag(&(eq_ctxt->offload_eq)))
         if (eq_ctxt->ctl)
             offload_eq_send_params(eq_ctxt->ctl, &eq_ctxt->offload_eq,
                                    OFFLOAD_SEND_EQ_ENABLE_FLAG |
                                    OFFLOAD_SEND_EQ_BANDS_LEVEL);
-        if (eq_ctxt->hw_acc_fd > 0)
-            hw_acc_eq_send_params(eq_ctxt->hw_acc_fd, &eq_ctxt->offload_eq,
-                                  OFFLOAD_SEND_EQ_ENABLE_FLAG |
-                                  OFFLOAD_SEND_EQ_BANDS_LEVEL);
-    }
     return 0;
 }
 
@@ -533,27 +548,7 @@ int equalizer_stop(effect_context_t *context, output_context_t *output __unused)
 {
     equalizer_context_t *eq_ctxt = (equalizer_context_t *)context;
 
-    ALOGV("%s: ctxt %p", __func__, eq_ctxt);
-    if (offload_eq_get_enable_flag(&(eq_ctxt->offload_eq)) &&
-        eq_ctxt->ctl) {
-        struct eq_params eq;
-        eq.enable_flag = false;
-        offload_eq_send_params(eq_ctxt->ctl, &eq, OFFLOAD_SEND_EQ_ENABLE_FLAG);
-    }
+    ALOGV("%s", __func__);
     eq_ctxt->ctl = NULL;
-    return 0;
-}
-
-int equalizer_set_mode(effect_context_t *context, int32_t hw_acc_fd)
-{
-    equalizer_context_t *eq_ctxt = (equalizer_context_t *)context;
-
-    ALOGV("%s: ctxt %p", __func__, eq_ctxt);
-    eq_ctxt->hw_acc_fd = hw_acc_fd;
-    if ((eq_ctxt->hw_acc_fd > 0) &&
-        (offload_eq_get_enable_flag(&(eq_ctxt->offload_eq))))
-        hw_acc_eq_send_params(eq_ctxt->hw_acc_fd, &eq_ctxt->offload_eq,
-                              OFFLOAD_SEND_EQ_ENABLE_FLAG |
-                              OFFLOAD_SEND_EQ_BANDS_LEVEL);
     return 0;
 }

@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2013 - 2014, The Linux Foundation. All rights reserved.
- * Not a Contribution.
- *
- * Copyright (C) 2013 The Android Open Source Project
+ * Copyright (C) 2014 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -123,281 +120,152 @@ void reverb_preset_init(reverb_context_t *context)
  */
 int16_t reverb_get_room_level(reverb_context_t *context)
 {
-    ALOGV("%s: ctxt %p, room level: %d", __func__, context, context->reverb_settings.roomLevel);
+    ALOGV("%s: room level: %d", __func__, context->reverb_settings.roomLevel);
     return context->reverb_settings.roomLevel;
 }
 
 void reverb_set_room_level(reverb_context_t *context, int16_t room_level)
 {
-    ALOGV("%s: ctxt %p, room level: %d", __func__, context, room_level);
+    ALOGV("%s: room level: %d", __func__, room_level);
     context->reverb_settings.roomLevel = room_level;
     offload_reverb_set_room_level(&(context->offload_reverb), room_level);
     if (context->ctl)
         offload_reverb_send_params(context->ctl, &context->offload_reverb,
                                    OFFLOAD_SEND_REVERB_ENABLE_FLAG |
                                    OFFLOAD_SEND_REVERB_ROOM_LEVEL);
-    if (context->hw_acc_fd > 0)
-        hw_acc_reverb_send_params(context->hw_acc_fd, &context->offload_reverb,
-                                  OFFLOAD_SEND_REVERB_ENABLE_FLAG |
-                                  OFFLOAD_SEND_REVERB_ROOM_LEVEL);
 }
 
 int16_t reverb_get_room_hf_level(reverb_context_t *context)
 {
-    ALOGV("%s: ctxt %p, room hf level: %d", __func__, context,
+    ALOGV("%s: room hf level: %d", __func__,
           context->reverb_settings.roomHFLevel);
     return context->reverb_settings.roomHFLevel;
 }
 
 void reverb_set_room_hf_level(reverb_context_t *context, int16_t room_hf_level)
 {
-    ALOGV("%s: ctxt %p, room hf level: %d", __func__, context, room_hf_level);
+    ALOGV("%s: room hf level: %d", __func__, room_hf_level);
     context->reverb_settings.roomHFLevel = room_hf_level;
     offload_reverb_set_room_hf_level(&(context->offload_reverb), room_hf_level);
     if (context->ctl)
         offload_reverb_send_params(context->ctl, &context->offload_reverb,
                                    OFFLOAD_SEND_REVERB_ENABLE_FLAG |
                                    OFFLOAD_SEND_REVERB_ROOM_HF_LEVEL);
-    if (context->hw_acc_fd > 0)
-        hw_acc_reverb_send_params(context->hw_acc_fd, &context->offload_reverb,
-                                  OFFLOAD_SEND_REVERB_ENABLE_FLAG |
-                                  OFFLOAD_SEND_REVERB_ROOM_HF_LEVEL);
 }
 
 uint32_t reverb_get_decay_time(reverb_context_t *context)
 {
-    ALOGV("%s: ctxt %p, decay time: %d", __func__, context,
-                         context->reverb_settings.decayTime);
+    ALOGV("%s: decay time: %d", __func__, context->reverb_settings.decayTime);
     return context->reverb_settings.decayTime;
 }
 
 void reverb_set_decay_time(reverb_context_t *context, uint32_t decay_time)
 {
-    ALOGV("%s: ctxt %p, decay_time: %d", __func__, context, decay_time);
+    ALOGV("%s: decay_time: %d", __func__, decay_time);
     context->reverb_settings.decayTime = decay_time;
     offload_reverb_set_decay_time(&(context->offload_reverb), decay_time);
     if (context->ctl)
         offload_reverb_send_params(context->ctl, &context->offload_reverb,
                                    OFFLOAD_SEND_REVERB_ENABLE_FLAG |
                                    OFFLOAD_SEND_REVERB_DECAY_TIME);
-    if (context->hw_acc_fd > 0)
-        hw_acc_reverb_send_params(context->hw_acc_fd, &context->offload_reverb,
-                                  OFFLOAD_SEND_REVERB_ENABLE_FLAG |
-                                  OFFLOAD_SEND_REVERB_DECAY_TIME);
 }
 
 int16_t reverb_get_decay_hf_ratio(reverb_context_t *context)
 {
-    ALOGV("%s: ctxt %p, decay hf ratio: %d", __func__, context,
+    ALOGV("%s: decay hf ratio: %d", __func__,
           context->reverb_settings.decayHFRatio);
     return context->reverb_settings.decayHFRatio;
 }
 
 void reverb_set_decay_hf_ratio(reverb_context_t *context, int16_t decay_hf_ratio)
 {
-    ALOGV("%s: ctxt %p, decay_hf_ratio: %d", __func__, context, decay_hf_ratio);
+    ALOGV("%s: decay_hf_ratio: %d", __func__, decay_hf_ratio);
     context->reverb_settings.decayHFRatio = decay_hf_ratio;
     offload_reverb_set_decay_hf_ratio(&(context->offload_reverb), decay_hf_ratio);
     if (context->ctl)
         offload_reverb_send_params(context->ctl, &context->offload_reverb,
                                    OFFLOAD_SEND_REVERB_ENABLE_FLAG |
                                    OFFLOAD_SEND_REVERB_DECAY_HF_RATIO);
-    if (context->hw_acc_fd > 0)
-        hw_acc_reverb_send_params(context->hw_acc_fd, &context->offload_reverb,
-                                  OFFLOAD_SEND_REVERB_ENABLE_FLAG |
-                                  OFFLOAD_SEND_REVERB_DECAY_HF_RATIO);
 }
 
 int16_t reverb_get_reverb_level(reverb_context_t *context)
 {
-    ALOGV("%s: ctxt %p, reverb level: %d", __func__, context,
-                         context->reverb_settings.reverbLevel);
+    ALOGV("%s: reverb level: %d", __func__, context->reverb_settings.reverbLevel);
     return context->reverb_settings.reverbLevel;
 }
 
 void reverb_set_reverb_level(reverb_context_t *context, int16_t reverb_level)
 {
-    ALOGV("%s: ctxt %p, reverb level: %d", __func__, context, reverb_level);
+    ALOGV("%s: reverb level: %d", __func__, reverb_level);
     context->reverb_settings.reverbLevel = reverb_level;
     offload_reverb_set_reverb_level(&(context->offload_reverb), reverb_level);
     if (context->ctl)
         offload_reverb_send_params(context->ctl, &context->offload_reverb,
                                    OFFLOAD_SEND_REVERB_ENABLE_FLAG |
                                    OFFLOAD_SEND_REVERB_LEVEL);
-    if (context->hw_acc_fd > 0)
-        hw_acc_reverb_send_params(context->hw_acc_fd, &context->offload_reverb,
-                                  OFFLOAD_SEND_REVERB_ENABLE_FLAG |
-                                  OFFLOAD_SEND_REVERB_LEVEL);
-}
-
-uint32_t reverb_get_reverb_delay(reverb_context_t *context)
-{
-    ALOGV("%s: ctxt %p, reverb delay: %d", __func__, context,
-                          context->reverb_settings.reverbDelay);
-    return context->reverb_settings.reverbDelay;
-}
-
-void reverb_set_reverb_delay(reverb_context_t *context, uint32_t delay)
-{
-    ALOGV("%s: ctxt %p, reverb delay: %d", __func__, context, delay);
-    context->reverb_settings.reverbDelay = delay;
-    offload_reverb_set_delay(&(context->offload_reverb), delay);
-    if (context->ctl)
-        offload_reverb_send_params(context->ctl, &context->offload_reverb,
-                                   OFFLOAD_SEND_REVERB_ENABLE_FLAG |
-                                   OFFLOAD_SEND_REVERB_DELAY);
-    if (context->hw_acc_fd > 0)
-        hw_acc_reverb_send_params(context->hw_acc_fd, &context->offload_reverb,
-                                  OFFLOAD_SEND_REVERB_ENABLE_FLAG |
-                                  OFFLOAD_SEND_REVERB_DELAY);
-}
-
-int16_t reverb_get_reflections_level(reverb_context_t *context)
-{
-    ALOGV("%s: ctxt %p, reflection level: %d", __func__, context,
-                          context->reverb_settings.reflectionsLevel);
-    return context->reverb_settings.reflectionsLevel;
-}
-
-void reverb_set_reflections_level(reverb_context_t *context, int16_t level)
-{
-    ALOGV("%s: ctxt %p, reflection level: %d", __func__, context, level);
-    context->reverb_settings.reflectionsLevel = level;
-    offload_reverb_set_reflections_level(&(context->offload_reverb), level);
-    if (context->ctl)
-        offload_reverb_send_params(context->ctl, &context->offload_reverb,
-                                   OFFLOAD_SEND_REVERB_ENABLE_FLAG |
-                                   OFFLOAD_SEND_REVERB_REFLECTIONS_LEVEL);
-    if (context->hw_acc_fd > 0)
-        hw_acc_reverb_send_params(context->hw_acc_fd, &context->offload_reverb,
-                                  OFFLOAD_SEND_REVERB_ENABLE_FLAG |
-                                  OFFLOAD_SEND_REVERB_REFLECTIONS_LEVEL);
-}
-
-uint32_t reverb_get_reflections_delay(reverb_context_t *context)
-{
-    ALOGV("%s: ctxt %p, reflection delay: %d", __func__, context,
-                          context->reverb_settings.reflectionsDelay);
-    return context->reverb_settings.reflectionsDelay;
-}
-
-void reverb_set_reflections_delay(reverb_context_t *context, uint32_t delay)
-{
-    ALOGV("%s: ctxt %p, reflection delay: %d", __func__, context, delay);
-    context->reverb_settings.reflectionsDelay = delay;
-    offload_reverb_set_reflections_delay(&(context->offload_reverb), delay);
-    if (context->ctl)
-        offload_reverb_send_params(context->ctl, &context->offload_reverb,
-                                   OFFLOAD_SEND_REVERB_ENABLE_FLAG |
-                                   OFFLOAD_SEND_REVERB_REFLECTIONS_DELAY);
-    if (context->hw_acc_fd > 0)
-        hw_acc_reverb_send_params(context->hw_acc_fd, &context->offload_reverb,
-                                  OFFLOAD_SEND_REVERB_ENABLE_FLAG |
-                                  OFFLOAD_SEND_REVERB_REFLECTIONS_DELAY);
 }
 
 int16_t reverb_get_diffusion(reverb_context_t *context)
 {
-    ALOGV("%s: ctxt %p, diffusion: %d", __func__, context,
-                        context->reverb_settings.diffusion);
+    ALOGV("%s: diffusion: %d", __func__, context->reverb_settings.diffusion);
     return context->reverb_settings.diffusion;
 }
 
 void reverb_set_diffusion(reverb_context_t *context, int16_t diffusion)
 {
-    ALOGV("%s: ctxt %p, diffusion: %d", __func__, context, diffusion);
+    ALOGV("%s: diffusion: %d", __func__, diffusion);
     context->reverb_settings.diffusion = diffusion;
     offload_reverb_set_diffusion(&(context->offload_reverb), diffusion);
     if (context->ctl)
         offload_reverb_send_params(context->ctl, &context->offload_reverb,
                                    OFFLOAD_SEND_REVERB_ENABLE_FLAG |
                                    OFFLOAD_SEND_REVERB_DIFFUSION);
-    if (context->hw_acc_fd > 0)
-        hw_acc_reverb_send_params(context->hw_acc_fd, &context->offload_reverb,
-                                  OFFLOAD_SEND_REVERB_ENABLE_FLAG |
-                                  OFFLOAD_SEND_REVERB_DIFFUSION);
 }
 
 int16_t reverb_get_density(reverb_context_t *context)
 {
-    ALOGV("%s: ctxt %p, density: %d", __func__, context,
-                          context->reverb_settings.density);
+    ALOGV("%s: density: %d", __func__, context->reverb_settings.density);
     return context->reverb_settings.density;
 }
 
 void reverb_set_density(reverb_context_t *context, int16_t density)
 {
-    ALOGV("%s: ctxt %p, density: %d", __func__, context, density);
+    ALOGV("%s: density: %d", __func__, density);
     context->reverb_settings.density = density;
     offload_reverb_set_density(&(context->offload_reverb), density);
     if (context->ctl)
         offload_reverb_send_params(context->ctl, &context->offload_reverb,
                                    OFFLOAD_SEND_REVERB_ENABLE_FLAG |
                                    OFFLOAD_SEND_REVERB_DENSITY);
-    if (context->hw_acc_fd > 0)
-        hw_acc_reverb_send_params(context->hw_acc_fd, &context->offload_reverb,
-                                  OFFLOAD_SEND_REVERB_ENABLE_FLAG |
-                                  OFFLOAD_SEND_REVERB_DENSITY);
 }
 
 void reverb_set_preset(reverb_context_t *context, int16_t preset)
 {
     bool enable;
-    ALOGV("%s: ctxt %p, preset: %d", __func__, context, preset);
+    ALOGV("%s: preset: %d", __func__, preset);
     context->next_preset = preset;
     offload_reverb_set_preset(&(context->offload_reverb), preset);
 
-    if (context->enabled_by_client) {
-        enable = (preset == REVERB_PRESET_NONE) ? false: true;
-        offload_reverb_set_enable_flag(&(context->offload_reverb), enable);
+    enable = (preset == REVERB_PRESET_NONE) ? false: true;
+    offload_reverb_set_enable_flag(&(context->offload_reverb), enable);
 
-        if (context->ctl)
-            offload_reverb_send_params(context->ctl, &context->offload_reverb,
+    if (context->ctl)
+        offload_reverb_send_params(context->ctl, &context->offload_reverb,
                                    OFFLOAD_SEND_REVERB_ENABLE_FLAG |
                                    OFFLOAD_SEND_REVERB_PRESET);
-        if (context->hw_acc_fd > 0)
-            hw_acc_reverb_send_params(context->hw_acc_fd, &context->offload_reverb,
-                                  OFFLOAD_SEND_REVERB_ENABLE_FLAG |
-                                  OFFLOAD_SEND_REVERB_PRESET);
-    }
 }
 
 void reverb_set_all_properties(reverb_context_t *context,
                                reverb_settings_t *reverb_settings)
 {
-    ALOGV("%s: ctxt %p", __func__, context);
+    ALOGV("%s", __func__);
     context->reverb_settings.roomLevel = reverb_settings->roomLevel;
     context->reverb_settings.roomHFLevel = reverb_settings->roomHFLevel;
     context->reverb_settings.decayTime = reverb_settings->decayTime;
     context->reverb_settings.decayHFRatio = reverb_settings->decayHFRatio;
     context->reverb_settings.reverbLevel = reverb_settings->reverbLevel;
-    context->reverb_settings.reverbDelay = reverb_settings->reverbDelay;
-    context->reverb_settings.reflectionsLevel = reverb_settings->reflectionsLevel;
-    context->reverb_settings.reflectionsDelay = reverb_settings->reflectionsDelay;
     context->reverb_settings.diffusion = reverb_settings->diffusion;
     context->reverb_settings.density = reverb_settings->density;
-
-    offload_reverb_set_room_level(&(context->offload_reverb),
-                               reverb_settings->roomLevel);
-    offload_reverb_set_room_hf_level(&(context->offload_reverb),
-                               reverb_settings->roomHFLevel);
-    offload_reverb_set_decay_time(&(context->offload_reverb),
-                               reverb_settings->decayTime);
-    offload_reverb_set_decay_hf_ratio(&(context->offload_reverb),
-                               reverb_settings->decayHFRatio);
-    offload_reverb_set_reverb_level(&(context->offload_reverb),
-                               reverb_settings->reverbLevel);
-    offload_reverb_set_delay(&(context->offload_reverb),
-                               reverb_settings->reverbDelay);
-    offload_reverb_set_reflections_level(&(context->offload_reverb),
-                               reverb_settings->reflectionsLevel);
-    offload_reverb_set_reflections_delay(&(context->offload_reverb),
-                               reverb_settings->reflectionsDelay);
-    offload_reverb_set_diffusion(&(context->offload_reverb),
-                               reverb_settings->diffusion);
-    offload_reverb_set_density(&(context->offload_reverb),
-                               reverb_settings->density);
-
     if (context->ctl)
         offload_reverb_send_params(context->ctl, &context->offload_reverb,
                                    OFFLOAD_SEND_REVERB_ENABLE_FLAG |
@@ -406,24 +274,8 @@ void reverb_set_all_properties(reverb_context_t *context,
                                    OFFLOAD_SEND_REVERB_DECAY_TIME |
                                    OFFLOAD_SEND_REVERB_DECAY_HF_RATIO |
                                    OFFLOAD_SEND_REVERB_LEVEL |
-                                   OFFLOAD_SEND_REVERB_DELAY |
-                                   OFFLOAD_SEND_REVERB_REFLECTIONS_LEVEL |
-                                   OFFLOAD_SEND_REVERB_REFLECTIONS_DELAY |
                                    OFFLOAD_SEND_REVERB_DIFFUSION |
                                    OFFLOAD_SEND_REVERB_DENSITY);
-    if (context->hw_acc_fd > 0)
-        hw_acc_reverb_send_params(context->hw_acc_fd, &context->offload_reverb,
-                                  OFFLOAD_SEND_REVERB_ENABLE_FLAG |
-                                  OFFLOAD_SEND_REVERB_ROOM_LEVEL |
-                                  OFFLOAD_SEND_REVERB_ROOM_HF_LEVEL |
-                                  OFFLOAD_SEND_REVERB_DECAY_TIME |
-                                  OFFLOAD_SEND_REVERB_DECAY_HF_RATIO |
-                                  OFFLOAD_SEND_REVERB_LEVEL |
-                                  OFFLOAD_SEND_REVERB_DELAY |
-                                  OFFLOAD_SEND_REVERB_REFLECTIONS_LEVEL |
-                                  OFFLOAD_SEND_REVERB_REFLECTIONS_DELAY |
-                                  OFFLOAD_SEND_REVERB_DIFFUSION |
-                                  OFFLOAD_SEND_REVERB_DENSITY);
 }
 
 void reverb_load_preset(reverb_context_t *context)
@@ -453,7 +305,7 @@ int reverb_get_parameter(effect_context_t *context, effect_param_t *p,
     reverb_settings_t *reverb_settings;
     int i;
 
-    ALOGV("%s: ctxt %p, param %d", __func__, reverb_ctxt, param);
+    ALOGV("%s", __func__);
 
     p->status = 0;
 
@@ -485,22 +337,22 @@ int reverb_get_parameter(effect_context_t *context, effect_param_t *p,
            p->status = -EINVAL;
         p->vsize = sizeof(uint16_t);
         break;
-    case REVERB_PARAM_REVERB_LEVEL:
-        if (p->vsize < sizeof(uint16_t))
-           p->status = -EINVAL;
-        p->vsize = sizeof(uint16_t);
-        break;
-    case REVERB_PARAM_REVERB_DELAY:
-        if (p->vsize < sizeof(uint32_t))
-           p->status = -EINVAL;
-        p->vsize = sizeof(uint32_t);
-        break;
     case REVERB_PARAM_REFLECTIONS_LEVEL:
         if (p->vsize < sizeof(uint16_t))
            p->status = -EINVAL;
         p->vsize = sizeof(uint16_t);
         break;
     case REVERB_PARAM_REFLECTIONS_DELAY:
+        if (p->vsize < sizeof(uint32_t))
+           p->status = -EINVAL;
+        p->vsize = sizeof(uint32_t);
+        break;
+    case REVERB_PARAM_REVERB_LEVEL:
+        if (p->vsize < sizeof(uint16_t))
+           p->status = -EINVAL;
+        p->vsize = sizeof(uint16_t);
+        break;
+    case REVERB_PARAM_REVERB_DELAY:
         if (p->vsize < sizeof(uint32_t))
            p->status = -EINVAL;
         p->vsize = sizeof(uint32_t);
@@ -530,48 +382,59 @@ int reverb_get_parameter(effect_context_t *context, effect_param_t *p,
         return 0;
 
     switch (param) {
-    case REVERB_PARAM_ROOM_LEVEL:
-        *(int16_t *)value = reverb_get_room_level(reverb_ctxt);
-        break;
-    case REVERB_PARAM_ROOM_HF_LEVEL:
-        *(int16_t *)value = reverb_get_room_hf_level(reverb_ctxt);
-        break;
-    case REVERB_PARAM_DECAY_TIME:
-        *(uint32_t *)value = reverb_get_decay_time(reverb_ctxt);
-        break;
-    case REVERB_PARAM_DECAY_HF_RATIO:
-        *(int16_t *)value = reverb_get_decay_hf_ratio(reverb_ctxt);
-        break;
-    case REVERB_PARAM_REVERB_LEVEL:
-        *(int16_t *)value = reverb_get_reverb_level(reverb_ctxt);
-        break;
-    case REVERB_PARAM_REVERB_DELAY:
-        *(uint32_t *)value = reverb_get_reverb_delay(reverb_ctxt);
-        break;
-    case REVERB_PARAM_REFLECTIONS_LEVEL:
-        *(int16_t *)value = reverb_get_reflections_level(reverb_ctxt);
-        break;
-    case REVERB_PARAM_REFLECTIONS_DELAY:
-        *(uint32_t *)value = reverb_get_reflections_delay(reverb_ctxt);
-        break;
-    case REVERB_PARAM_DIFFUSION:
-        *(int16_t *)value = reverb_get_diffusion(reverb_ctxt);
-        break;
-    case REVERB_PARAM_DENSITY:
-        *(int16_t *)value = reverb_get_density(reverb_ctxt);
-        break;
     case REVERB_PARAM_PROPERTIES:
+	ALOGV("%s: REVERB_PARAM_PROPERTIES", __func__);
         reverb_settings = (reverb_settings_t *)value;
         reverb_settings->roomLevel = reverb_get_room_level(reverb_ctxt);
         reverb_settings->roomHFLevel = reverb_get_room_hf_level(reverb_ctxt);
         reverb_settings->decayTime = reverb_get_decay_time(reverb_ctxt);
         reverb_settings->decayHFRatio = reverb_get_decay_hf_ratio(reverb_ctxt);
+        reverb_settings->reflectionsLevel = 0;
+        reverb_settings->reflectionsDelay = 0;
+        reverb_settings->reverbDelay = 0;
         reverb_settings->reverbLevel = reverb_get_reverb_level(reverb_ctxt);
-        reverb_settings->reverbDelay = reverb_get_reverb_delay(reverb_ctxt);
-        reverb_settings->reflectionsLevel = reverb_get_reflections_level(reverb_ctxt);
-        reverb_settings->reflectionsDelay = reverb_get_reflections_delay(reverb_ctxt);
         reverb_settings->diffusion = reverb_get_diffusion(reverb_ctxt);
         reverb_settings->density = reverb_get_density(reverb_ctxt);
+        break;
+    case REVERB_PARAM_ROOM_LEVEL:
+	ALOGV("%s: REVERB_PARAM_ROOM_LEVEL", __func__);
+        *(int16_t *)value = reverb_get_room_level(reverb_ctxt);
+        break;
+    case REVERB_PARAM_ROOM_HF_LEVEL:
+	ALOGV("%s: REVERB_PARAM_ROOM_HF_LEVEL", __func__);
+        *(int16_t *)value = reverb_get_room_hf_level(reverb_ctxt);
+        break;
+    case REVERB_PARAM_DECAY_TIME:
+	ALOGV("%s: REVERB_PARAM_DECAY_TIME", __func__);
+        *(uint32_t *)value = reverb_get_decay_time(reverb_ctxt);
+        break;
+    case REVERB_PARAM_DECAY_HF_RATIO:
+	ALOGV("%s: REVERB_PARAM_DECAY_HF_RATIO", __func__);
+        *(int16_t *)value = reverb_get_decay_hf_ratio(reverb_ctxt);
+        break;
+    case REVERB_PARAM_REVERB_LEVEL:
+	ALOGV("%s: REVERB_PARAM_REVERB_LEVEL", __func__);
+        *(int16_t *)value = reverb_get_reverb_level(reverb_ctxt);
+        break;
+    case REVERB_PARAM_DIFFUSION:
+	ALOGV("%s: REVERB_PARAM_DIFFUSION", __func__);
+        *(int16_t *)value = reverb_get_diffusion(reverb_ctxt);
+        break;
+    case REVERB_PARAM_DENSITY:
+	ALOGV("%s: REVERB_PARAM_DENSITY", __func__);
+        *(int16_t *)value = reverb_get_density(reverb_ctxt);
+        break;
+    case REVERB_PARAM_REFLECTIONS_LEVEL:
+	ALOGV("%s: REVERB_PARAM_REFLECTIONS_LEVEL", __func__);
+        *(uint16_t *)value = 0;
+        break;
+    case REVERB_PARAM_REFLECTIONS_DELAY:
+	ALOGV("%s: REVERB_PARAM_REFLECTIONS_DELAY", __func__);
+        *(uint32_t *)value = 0;
+        break;
+    case REVERB_PARAM_REVERB_DELAY:
+	ALOGV("%s: REVERB_PARAM_REVERB_DELAY", __func__);
+        *(uint32_t *)value = 0;
         break;
     default:
         p->status = -EINVAL;
@@ -593,9 +456,8 @@ int reverb_set_parameter(effect_context_t *context, effect_param_t *p,
     int16_t level;
     int16_t ratio;
     uint32_t time;
-    uint32_t delay;
 
-    ALOGV("%s: ctxt %p, param %d", __func__, reverb_ctxt, param);
+    ALOGV("%s", __func__);
 
     p->status = 0;
 
@@ -612,48 +474,47 @@ int reverb_set_parameter(effect_context_t *context, effect_param_t *p,
     }
     switch (param) {
     case REVERB_PARAM_PROPERTIES:
+	ALOGV("%s: REVERB_PARAM_PROPERTIES", __func__);
         reverb_settings = (reverb_settings_t *)value;
-        reverb_set_all_properties(reverb_ctxt, reverb_settings);
         break;
     case REVERB_PARAM_ROOM_LEVEL:
+	ALOGV("%s: REVERB_PARAM_ROOM_LEVEL", __func__);
         level = *(int16_t *)value;
         reverb_set_room_level(reverb_ctxt, level);
         break;
     case REVERB_PARAM_ROOM_HF_LEVEL:
+	ALOGV("%s: REVERB_PARAM_ROOM_HF_LEVEL", __func__);
         level = *(int16_t *)value;
         reverb_set_room_hf_level(reverb_ctxt, level);
         break;
     case REVERB_PARAM_DECAY_TIME:
+	ALOGV("%s: REVERB_PARAM_DECAY_TIME", __func__);
         time = *(uint32_t *)value;
         reverb_set_decay_time(reverb_ctxt, time);
         break;
     case REVERB_PARAM_DECAY_HF_RATIO:
+	ALOGV("%s: REVERB_PARAM_DECAY_HF_RATIO", __func__);
         ratio = *(int16_t *)value;
         reverb_set_decay_hf_ratio(reverb_ctxt, ratio);
         break;
     case REVERB_PARAM_REVERB_LEVEL:
+	ALOGV("%s: REVERB_PARAM_REVERB_LEVEL", __func__);
         level = *(int16_t *)value;
         reverb_set_reverb_level(reverb_ctxt, level);
         break;
-    case REVERB_PARAM_REVERB_DELAY:
-        delay = *(uint32_t *)value;
-        reverb_set_reverb_delay(reverb_ctxt, delay);
-        break;
-    case REVERB_PARAM_REFLECTIONS_LEVEL:
-        level = *(int16_t *)value;
-        reverb_set_reflections_level(reverb_ctxt, level);
-        break;
-    case REVERB_PARAM_REFLECTIONS_DELAY:
-        delay = *(uint32_t *)value;
-        reverb_set_reflections_delay(reverb_ctxt, delay);
-        break;
     case REVERB_PARAM_DIFFUSION:
+	ALOGV("%s: REVERB_PARAM_DIFFUSION", __func__);
         ratio = *(int16_t *)value;
         reverb_set_diffusion(reverb_ctxt, ratio);
         break;
     case REVERB_PARAM_DENSITY:
+	ALOGV("%s: REVERB_PARAM_DENSITY", __func__);
         ratio = *(int16_t *)value;
         reverb_set_density(reverb_ctxt, ratio);
+        break;
+    case REVERB_PARAM_REFLECTIONS_LEVEL:
+    case REVERB_PARAM_REFLECTIONS_DELAY:
+    case REVERB_PARAM_REVERB_DELAY:
         break;
     default:
         p->status = -EINVAL;
@@ -667,7 +528,7 @@ int reverb_set_device(effect_context_t *context, uint32_t device)
 {
     reverb_context_t *reverb_ctxt = (reverb_context_t *)context;
 
-    ALOGV("%s: ctxt %p, device: 0x%x", __func__, reverb_ctxt, device);
+    ALOGV("%s: device: %d", __func__, device);
     reverb_ctxt->device = device;
     offload_reverb_set_device(&(reverb_ctxt->offload_reverb), device);
     return 0;
@@ -684,7 +545,6 @@ int reverb_init(effect_context_t *context)
 {
     reverb_context_t *reverb_ctxt = (reverb_context_t *)context;
 
-    ALOGV("%s: ctxt %p", __func__, reverb_ctxt);
     context->config.inputCfg.accessMode = EFFECT_BUFFER_ACCESS_READ;
     /*
        FIXME: channel mode is mono for auxiliary. is it needed for offload ?
@@ -708,8 +568,6 @@ int reverb_init(effect_context_t *context)
 
     set_config(context, &context->config);
 
-    reverb_ctxt->hw_acc_fd = -1;
-    reverb_ctxt->enabled_by_client = false;
     memset(&(reverb_ctxt->reverb_settings), 0, sizeof(reverb_settings_t));
     memset(&(reverb_ctxt->offload_reverb), 0, sizeof(struct reverb_params));
 
@@ -724,17 +582,7 @@ int reverb_enable(effect_context_t *context)
 {
     reverb_context_t *reverb_ctxt = (reverb_context_t *)context;
 
-    ALOGV("%s: ctxt %p", __func__, reverb_ctxt);
-    reverb_ctxt->enabled_by_client = true;
-
-    /* REVERB_PRESET_NONE is equivalent to disabled state,
-     * But support for this state is not provided in DSP.
-     * Hence, do not set enable flag, if in peset mode with preset "NONE".
-     * Effect would be enabled when valid preset is set.
-     */
-    if ((reverb_ctxt->preset == true) &&
-        (reverb_ctxt->next_preset == REVERB_PRESET_NONE))
-        return 0;
+    ALOGV("%s", __func__);
 
     if (!offload_reverb_get_enable_flag(&(reverb_ctxt->offload_reverb)))
         offload_reverb_set_enable_flag(&(reverb_ctxt->offload_reverb), true);
@@ -745,18 +593,13 @@ int reverb_disable(effect_context_t *context)
 {
     reverb_context_t *reverb_ctxt = (reverb_context_t *)context;
 
-    ALOGV("%s: ctxt %p", __func__, reverb_ctxt);
-    reverb_ctxt->enabled_by_client = false;
+    ALOGV("%s", __func__);
     if (offload_reverb_get_enable_flag(&(reverb_ctxt->offload_reverb))) {
         offload_reverb_set_enable_flag(&(reverb_ctxt->offload_reverb), false);
         if (reverb_ctxt->ctl)
             offload_reverb_send_params(reverb_ctxt->ctl,
                                        &reverb_ctxt->offload_reverb,
                                        OFFLOAD_SEND_REVERB_ENABLE_FLAG);
-        if (reverb_ctxt->hw_acc_fd > 0)
-            hw_acc_reverb_send_params(reverb_ctxt->hw_acc_fd,
-                                      &reverb_ctxt->offload_reverb,
-                                      OFFLOAD_SEND_REVERB_ENABLE_FLAG);
     }
     return 0;
 }
@@ -765,19 +608,13 @@ int reverb_start(effect_context_t *context, output_context_t *output)
 {
     reverb_context_t *reverb_ctxt = (reverb_context_t *)context;
 
-    ALOGV("%s: ctxt %p, ctl %p", __func__, reverb_ctxt, output->ctl);
+    ALOGV("%s", __func__);
     reverb_ctxt->ctl = output->ctl;
     if (offload_reverb_get_enable_flag(&(reverb_ctxt->offload_reverb))) {
         if (reverb_ctxt->ctl && reverb_ctxt->preset) {
             offload_reverb_send_params(reverb_ctxt->ctl, &reverb_ctxt->offload_reverb,
                                        OFFLOAD_SEND_REVERB_ENABLE_FLAG |
                                        OFFLOAD_SEND_REVERB_PRESET);
-        }
-        if ((reverb_ctxt->hw_acc_fd > 0) && reverb_ctxt->preset) {
-            hw_acc_reverb_send_params(reverb_ctxt->hw_acc_fd,
-                                      &reverb_ctxt->offload_reverb,
-                                      OFFLOAD_SEND_REVERB_ENABLE_FLAG |
-                                      OFFLOAD_SEND_REVERB_PRESET);
         }
     }
 
@@ -788,29 +625,8 @@ int reverb_stop(effect_context_t *context, output_context_t *output __unused)
 {
     reverb_context_t *reverb_ctxt = (reverb_context_t *)context;
 
-    ALOGV("%s: ctxt %p", __func__, reverb_ctxt);
-    if (offload_reverb_get_enable_flag(&(reverb_ctxt->offload_reverb)) &&
-        reverb_ctxt->ctl) {
-        struct reverb_params reverb;
-        reverb.enable_flag = false;
-        offload_reverb_send_params(reverb_ctxt->ctl, &reverb,
-                                   OFFLOAD_SEND_REVERB_ENABLE_FLAG);
-    }
+    ALOGV("%s", __func__);
     reverb_ctxt->ctl = NULL;
     return 0;
 }
 
-int reverb_set_mode(effect_context_t *context, int32_t hw_acc_fd)
-{
-    reverb_context_t *reverb_ctxt = (reverb_context_t *)context;
-
-    ALOGV("%s: ctxt %p", __func__, reverb_ctxt);
-    reverb_ctxt->hw_acc_fd = hw_acc_fd;
-    if ((reverb_ctxt->hw_acc_fd > 0) &&
-        (offload_reverb_get_enable_flag(&(reverb_ctxt->offload_reverb))))
-        hw_acc_reverb_send_params(reverb_ctxt->hw_acc_fd,
-                                  &reverb_ctxt->offload_reverb,
-                                  OFFLOAD_SEND_BASSBOOST_ENABLE_FLAG |
-                                  OFFLOAD_SEND_BASSBOOST_STRENGTH);
-    return 0;
-}

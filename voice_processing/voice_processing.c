@@ -18,7 +18,6 @@
 /*#define LOG_NDEBUG 0*/
 #include <stdlib.h>
 #include <dlfcn.h>
-#include <stdlib.h>
 #include <cutils/log.h>
 #include <cutils/list.h>
 #include <hardware/audio_effect.h>
@@ -91,7 +90,7 @@ static const effect_descriptor_t qcom_default_aec_descriptor = {
         { 0x7b491460, 0x8d4d, 0x11e0, 0xbd61, { 0x00, 0x02, 0xa5, 0xd5, 0xc5, 0x1b } }, // type
         { 0x0f8d0d2a, 0x59e5, 0x45fe, 0xb6e4, { 0x24, 0x8c, 0x8a, 0x79, 0x91, 0x09 } }, // uuid
         EFFECT_CONTROL_API_VERSION,
-        (EFFECT_FLAG_TYPE_PRE_PROC|EFFECT_FLAG_DEVICE_IND),
+        (EFFECT_FLAG_TYPE_PRE_PROC|EFFECT_FLAG_DEVICE_IND|EFFECT_FLAG_HW_ACC_TUNNEL),
         0,
         0,
         "Acoustic Echo Canceler",
@@ -103,7 +102,7 @@ static const effect_descriptor_t qcom_default_ns_descriptor = {
         { 0x58b4b260, 0x8e06, 0x11e0, 0xaa8e, { 0x00, 0x02, 0xa5, 0xd5, 0xc5, 0x1b } }, // type
         { 0x1d97bb0b, 0x9e2f, 0x4403, 0x9ae3, { 0x58, 0xc2, 0x55, 0x43, 0x06, 0xf8 } }, // uuid
         EFFECT_CONTROL_API_VERSION,
-        (EFFECT_FLAG_TYPE_PRE_PROC|EFFECT_FLAG_DEVICE_IND),
+        (EFFECT_FLAG_TYPE_PRE_PROC|EFFECT_FLAG_DEVICE_IND|EFFECT_FLAG_HW_ACC_TUNNEL),
         0,
         0,
         "Noise Suppression",
@@ -116,7 +115,7 @@ static const effect_descriptor_t qcom_default_ns_descriptor = {
 //        { 0x0a8abfe0, 0x654c, 0x11e0, 0xba26, { 0x00, 0x02, 0xa5, 0xd5, 0xc5, 0x1b } }, // type
 //        { 0x0dd49521, 0x8c59, 0x40b1, 0xb403, { 0xe0, 0x8d, 0x5f, 0x01, 0x87, 0x5e } }, // uuid
 //        EFFECT_CONTROL_API_VERSION,
-//        (EFFECT_FLAG_TYPE_PRE_PROC|EFFECT_FLAG_DEVICE_IND),
+//        (EFFECT_FLAG_TYPE_PRE_PROC|EFFECT_FLAG_DEVICE_IND|EFFECT_FLAG_HW_ACC_TUNNEL),
 //        0,
 //        0,
 //        "Automatic Gain Control",
@@ -410,10 +409,6 @@ static struct session_s *get_session(int32_t id, int32_t  sessionId, int32_t  io
     }
 
     session = (struct session_s *)calloc(1, sizeof(struct session_s));
-    if (session == NULL) {
-        ALOGE("get_session() fail to allocate memory");
-        return NULL;
-    }
     session_init(session);
     session->id = sessionId;
     session->io = ioId;
@@ -690,10 +685,6 @@ static int lib_create(const effect_uuid_t *uuid,
         return -EINVAL;
     }
     id = uuid_to_id(&desc->type);
-    if (id >= NUM_ID) {
-        ALOGW("lib_create: fx not found type: %08x", desc->type.timeLow);
-        return -EINVAL;
-    }
 
     session = get_session(id, sessionId, ioId);
 
@@ -759,11 +750,11 @@ static int lib_get_descriptor(const effect_uuid_t *uuid,
 // This is the only symbol that needs to be exported
 __attribute__ ((visibility ("default")))
 audio_effect_library_t AUDIO_EFFECT_LIBRARY_INFO_SYM = {
-    tag : AUDIO_EFFECT_LIBRARY_TAG,
-    version : EFFECT_LIBRARY_API_VERSION,
-    name : "MSM8960 Audio Preprocessing Library",
-    implementor : "The Android Open Source Project",
-    create_effect : lib_create,
-    release_effect : lib_release,
-    get_descriptor : lib_get_descriptor
+    .tag = AUDIO_EFFECT_LIBRARY_TAG,
+    .version = EFFECT_LIBRARY_API_VERSION,
+    .name = "MSM8960 Audio Preprocessing Library",
+    .implementor = "The Android Open Source Project",
+    .create_effect = lib_create,
+    .release_effect = lib_release,
+    .get_descriptor = lib_get_descriptor
 };

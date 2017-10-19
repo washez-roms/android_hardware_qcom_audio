@@ -300,46 +300,26 @@ bool effects_enabled() {
     return false;
 }
 
-int set_control(const char* name, struct mixer *mixer, int value) {
-    struct mixer_ctl *ctl;
-
-    ctl = mixer_get_ctl_by_name(mixer, name);
-    if (ctl == NULL) {
-        ALOGW("%s: could not get %s ctl", __func__, name);
-        return -EINVAL;
-    }
-    if (mixer_ctl_set_value(ctl, 0, value) != 0) {
-        ALOGW("%s: error setting value %d on %s ", __func__, value, name);
-        return -EINVAL;
-    }
-
-    return 0;
-}
-
 int configure_proxy_capture(struct mixer *mixer, int value) {
-    int retval = 0;
+    const char *proxy_ctl_name = "AFE_PCM_RX Audio Mixer MultiMedia4";
+    struct mixer_ctl *ctl;
 
     if (value && acdb_send_audio_cal)
         acdb_send_audio_cal(AFE_PROXY_ACDB_ID, ACDB_DEV_TYPE_OUT);
 
-    retval = set_control("AFE_PCM_RX Audio Mixer MultiMedia4", mixer, value);
-
-    if (retval != 0)
-        return retval;
-
-    // Extending visualizer to capture for compress2 path as well.
-    // for extending it to multiple offload either this needs to be extended
-    // or need to find better solution to enable only active offload sessions
-
-    retval = set_control("AFE_PCM_RX Audio Mixer MultiMedia7", mixer, value);
-    if (retval != 0)
-        return retval;
+    ctl = mixer_get_ctl_by_name(mixer, proxy_ctl_name);
+    if (ctl == NULL) {
+        ALOGW("%s: could not get %s ctl", __func__, proxy_ctl_name);
+        return -EINVAL;
+    }
+    if (mixer_ctl_set_value(ctl, 0, value) != 0)
+        ALOGW("%s: error setting value %d on %s ", __func__, value, proxy_ctl_name);
 
     return 0;
 }
 
 
-void *capture_thread_loop(void *arg)
+void *capture_thread_loop(void *arg __unused)
 {
     int16_t data[AUDIO_CAPTURE_PERIOD_SIZE * AUDIO_CAPTURE_CHANNEL_COUNT * sizeof(int16_t)];
     audio_buffer_t buf;
@@ -464,11 +444,6 @@ int visualizer_hal_start_output(audio_io_handle_t output, int pcm_id) {
     }
 
     output_context_t *out_ctxt = (output_context_t *)malloc(sizeof(output_context_t));
-    if (out_ctxt == NULL) {
-        ALOGE("%s fail to allocate memory", __func__);
-        ret = -ENOMEM;
-        goto exit;
-    }
     out_ctxt->handle = output;
     list_init(&out_ctxt->effects_list);
 
@@ -635,7 +610,7 @@ int visualizer_init(effect_context_t *context)
     visu_ctxt->scaling_mode = VISUALIZER_SCALING_MODE_NORMALIZED;
 
     // measurement initialization
-    visu_ctxt->channel_count = popcount(context->config.inputCfg.channels);
+    visu_ctxt->channel_count = audio_channel_count_from_out_mask(context->config.inputCfg.channels);
     visu_ctxt->meas_mode = MEASUREMENT_MODE_NONE;
     visu_ctxt->meas_wndw_size_in_buffers = MEASUREMENT_WINDOW_MAX_SIZE_IN_BUFFERS;
     visu_ctxt->meas_buffer_idx = 0;
@@ -698,7 +673,7 @@ int visualizer_get_parameter(effect_context_t *context, effect_param_t *p, uint3
     return 0;
 }
 
-int visualizer_set_parameter(effect_context_t *context, effect_param_t *p, uint32_t size)
+int visualizer_set_parameter(effect_context_t *context, effect_param_t *p, uint32_t size __unused)
 {
     visualizer_context_t *visu_ctxt = (visualizer_context_t *)context;
 
@@ -831,8 +806,8 @@ int visualizer_process(effect_context_t *context,
     return 0;
 }
 
-int visualizer_command(effect_context_t * context, uint32_t cmdCode, uint32_t cmdSize,
-        void *pCmdData, uint32_t *replySize, void *pReplyData)
+int visualizer_command(effect_context_t * context, uint32_t cmdCode, uint32_t cmdSize __unused,
+        void *pCmdData __unused, uint32_t *replySize, void *pReplyData)
 {
     visualizer_context_t * visu_ctxt = (visualizer_context_t *)context;
 
@@ -894,9 +869,13 @@ int visualizer_command(effect_context_t * context, uint32_t cmdCode, uint32_t cm
     case VISUALIZER_CMD_MEASURE: {
         if (pReplyData == NULL || replySize == NULL ||
                 *replySize < (sizeof(int32_t) * MEASUREMENT_COUNT)) {
-            ALOGV("%s VISUALIZER_CMD_MEASURE error *replySize %d <"
-                    "(sizeof(int32_t) * MEASUREMENT_COUNT) %d",
-                    __func__, *replySize, sizeof(int32_t) * MEASUREMENT_COUNT);
+            if (replySize == NULL) {
+                ALOGV("%s VISUALIZER_CMD_MEASURE error replySize NULL", __func__);
+            } else {
+                ALOGV("%s VISUALIZER_CMD_MEASURE error *replySize %u <"
+                        "(sizeof(int32_t) * MEASUREMENT_COUNT) %zu",
+                        __func__, *replySize, sizeof(int32_t) * MEASUREMENT_COUNT);
+            }
             android_errorWriteLog(0x534e4554, "30229821");
             return -EINVAL;
         }
@@ -962,7 +941,7 @@ int visualizer_command(effect_context_t * context, uint32_t cmdCode, uint32_t cm
  */
 
 int effect_lib_create(const effect_uuid_t *uuid,
-                         int32_t sessionId,
+                         int32_t sessionId __unused,
                          int32_t ioId,
                          effect_handle_t *pHandle) {
     int ret;
@@ -986,10 +965,6 @@ int effect_lib_create(const effect_uuid_t *uuid,
     if (memcmp(uuid, &visualizer_descriptor.uuid, sizeof(effect_uuid_t)) == 0) {
         visualizer_context_t *visu_ctxt = (visualizer_context_t *)calloc(1,
                                                                      sizeof(visualizer_context_t));
-        if (visu_ctxt == NULL) {
-            ALOGE("%s fail to allocate memory", __func__);
-            return -ENOMEM;
-        }
         context = (effect_context_t *)visu_ctxt;
         context->ops.init = visualizer_init;
         context->ops.reset = visualizer_reset;
@@ -1083,8 +1058,8 @@ int effect_lib_get_descriptor(const effect_uuid_t *uuid,
 
  /* Stub function for effect interface: never called for offloaded effects */
 int effect_process(effect_handle_t self,
-                       audio_buffer_t *inBuffer,
-                       audio_buffer_t *outBuffer)
+                       audio_buffer_t *inBuffer __unused,
+                       audio_buffer_t *outBuffer __unused)
 {
     effect_context_t * context = (effect_context_t *)self;
     int status = 0;
@@ -1311,11 +1286,11 @@ const struct effect_interface_s effect_interface = {
 
 __attribute__ ((visibility ("default")))
 audio_effect_library_t AUDIO_EFFECT_LIBRARY_INFO_SYM = {
-    tag : AUDIO_EFFECT_LIBRARY_TAG,
-    version : EFFECT_LIBRARY_API_VERSION,
-    name : "Visualizer Library",
-    implementor : "The Android Open Source Project",
-    create_effect : effect_lib_create,
-    release_effect : effect_lib_release,
-    get_descriptor : effect_lib_get_descriptor,
+    .tag = AUDIO_EFFECT_LIBRARY_TAG,
+    .version = EFFECT_LIBRARY_API_VERSION,
+    .name = "Visualizer Library",
+    .implementor = "The Android Open Source Project",
+    .create_effect = effect_lib_create,
+    .release_effect = effect_lib_release,
+    .get_descriptor = effect_lib_get_descriptor,
 };

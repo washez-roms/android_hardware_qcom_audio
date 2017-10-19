@@ -7,15 +7,15 @@
 
 struct sound_trigger_session_info {
     int capture_handle;
-    void* p_ses;
+    struct pcm *pcm;
     struct pcm_config config;
 };
 
 enum audio_event_type {
     AUDIO_EVENT_CAPTURE_DEVICE_INACTIVE,
     AUDIO_EVENT_CAPTURE_DEVICE_ACTIVE,
-    AUDIO_EVENT_PLAYBACK_STREAM_INACTIVE,
-    AUDIO_EVENT_PLAYBACK_STREAM_ACTIVE,
+    dummy1,
+    dummy2,
     AUDIO_EVENT_STOP_LAB,
     AUDIO_EVENT_SSR,
     AUDIO_EVENT_NUM_ST_SESSIONS,

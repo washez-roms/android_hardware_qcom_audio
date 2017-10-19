@@ -1,32 +1,11 @@
 /*
- * Copyright (c) 2013-2016, The Linux Foundation. All rights reserved.
- * Not a Contribution.
- *
- * Copyright (C) 2013 The Android Open Source Project
+ * Copyright (C) 2014 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * This file was modified by DTS, Inc. The portions of the
- * code modified by DTS, Inc are copyrighted and
- * licensed separately, as follows:
- *
- * (C) 2014 DTS, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -46,16 +25,10 @@
 #include <hardware/audio_effect.h>
 
 #include "bundle.h"
-#include "hw_accelerator.h"
 #include "equalizer.h"
 #include "bass_boost.h"
 #include "virtualizer.h"
 #include "reverb.h"
-#include "asphere.h"
-
-#ifdef DTS_EAGLE
-#include "effect_util.h"
-#endif
 
 enum {
     EFFECT_STATE_UNINITIALIZED,
@@ -71,9 +44,6 @@ const effect_descriptor_t *descriptors[] = {
         &ins_env_reverb_descriptor,
         &aux_preset_reverb_descriptor,
         &ins_preset_reverb_descriptor,
-#ifdef HW_ACCELERATED_EFFECTS
-        &hw_accelerator_descriptor,
-#endif
         NULL,
 };
 
@@ -149,7 +119,6 @@ void add_effect_to_output(output_context_t * output, effect_context_t *context)
 {
     struct listnode *fx_node;
 
-    ALOGV("%s: e_ctxt %p, o_ctxt %p", __func__, context, output);
     list_for_each(fx_node, &output->effects_list) {
         effect_context_t *fx_ctxt = node_to_item(fx_node,
                                                  effect_context_t,
@@ -168,7 +137,6 @@ void remove_effect_from_output(output_context_t * output,
 {
     struct listnode *fx_node;
 
-    ALOGV("%s: e_ctxt %p, o_ctxt %p", __func__, context, output);
     list_for_each(fx_node, &output->effects_list) {
         effect_context_t *fx_ctxt = node_to_item(fx_node,
                                                  effect_context_t,
@@ -209,7 +177,7 @@ bool effects_enabled()
  * Interface from audio HAL
  */
 __attribute__ ((visibility ("default")))
-int offload_effects_bundle_hal_start_output(audio_io_handle_t output, int pcm_id, struct mixer *mixer)
+int offload_effects_bundle_hal_start_output(audio_io_handle_t output, int pcm_id)
 {
     int ret = 0;
     struct listnode *node;
@@ -217,10 +185,6 @@ int offload_effects_bundle_hal_start_output(audio_io_handle_t output, int pcm_id
     output_context_t * out_ctxt = NULL;
 
     ALOGV("%s output %d pcm_id %d", __func__, output, pcm_id);
-
-#ifdef DTS_EAGLE
-    create_effect_state_node(pcm_id);
-#endif
 
     if (lib_init() != 0)
         return init_status;
@@ -234,36 +198,29 @@ int offload_effects_bundle_hal_start_output(audio_io_handle_t output, int pcm_id
 
     out_ctxt = (output_context_t *)
                                  malloc(sizeof(output_context_t));
-    if (!out_ctxt) {
-        ALOGE("%s fail to allocate for output context", __func__);
-        ret = -ENOMEM;
-        goto exit;
-    }
     out_ctxt->handle = output;
     out_ctxt->pcm_device_id = pcm_id;
 
     /* populate the mixer control to send offload parameters */
     snprintf(mixer_string, sizeof(mixer_string),
              "%s %d", "Audio Effects Config", out_ctxt->pcm_device_id);
-
-    if (!mixer) {
-        ALOGE("Invalid mixer");
+    out_ctxt->mixer = mixer_open(MIXER_CARD);
+    if (!out_ctxt->mixer) {
+        ALOGE("Failed to open mixer");
         out_ctxt->ctl = NULL;
-        out_ctxt->ref_ctl = NULL;
         ret = -EINVAL;
         free(out_ctxt);
         goto exit;
     } else {
-        out_ctxt->mixer = mixer;
         out_ctxt->ctl = mixer_get_ctl_by_name(out_ctxt->mixer, mixer_string);
         if (!out_ctxt->ctl) {
             ALOGE("mixer_get_ctl_by_name failed");
+            mixer_close(out_ctxt->mixer);
             out_ctxt->mixer = NULL;
             ret = -EINVAL;
             free(out_ctxt);
             goto exit;
         }
-        out_ctxt->ref_ctl = out_ctxt->ctl;
     }
 
     list_init(&out_ctxt->effects_list);
@@ -287,7 +244,7 @@ exit:
 __attribute__ ((visibility ("default")))
 int offload_effects_bundle_hal_stop_output(audio_io_handle_t output, int pcm_id)
 {
-    int ret = -1;
+    int ret;
     struct listnode *node;
     struct listnode *fx_node;
     output_context_t *out_ctxt;
@@ -306,6 +263,9 @@ int offload_effects_bundle_hal_stop_output(audio_io_handle_t output, int pcm_id)
         goto exit;
     }
 
+    if (out_ctxt->mixer)
+        mixer_close(out_ctxt->mixer);
+
     list_for_each(fx_node, &out_ctxt->effects_list) {
         effect_context_t *fx_ctxt = node_to_item(fx_node,
                                                  effect_context_t,
@@ -316,10 +276,6 @@ int offload_effects_bundle_hal_stop_output(audio_io_handle_t output, int pcm_id)
 
     list_remove(&out_ctxt->outputs_list_node);
 
-#ifdef DTS_EAGLE
-    remove_effect_state_node(pcm_id);
-#endif
-
     free(out_ctxt);
 
 exit:
@@ -327,149 +283,6 @@ exit:
     return ret;
 }
 
-__attribute__ ((visibility ("default")))
-int offload_effects_bundle_set_hpx_state(bool hpx_state)
-{
-    int ret = 0;
-    struct listnode *node;
-
-    ALOGV("%s hpx state: %d", __func__, hpx_state);
-
-    if (lib_init() != 0)
-        return init_status;
-
-    pthread_mutex_lock(&lock);
-
-    if (hpx_state) {
-        /* set ramp down */
-        list_for_each(node, &active_outputs_list) {
-            output_context_t *out_ctxt = node_to_item(node,
-                                                      output_context_t,
-                                                      outputs_list_node);
-            struct soft_volume_params vol;
-            vol.master_gain = 0x0;
-            offload_transition_soft_volume_send_params(out_ctxt->ref_ctl, vol,
-                              OFFLOAD_SEND_TRANSITION_SOFT_VOLUME_GAIN_MASTER);
-        }
-        /* wait for ramp down duration - 30msec */
-        usleep(30000);
-        /* disable effects modules */
-        list_for_each(node, &active_outputs_list) {
-            struct listnode *fx_node;
-            output_context_t *out_ctxt = node_to_item(node,
-                                                      output_context_t,
-                                                      outputs_list_node);
-            list_for_each(fx_node, &out_ctxt->effects_list) {
-                effect_context_t *fx_ctxt = node_to_item(fx_node,
-                                                         effect_context_t,
-                                                         output_node);
-                if ((fx_ctxt->state == EFFECT_STATE_ACTIVE) &&
-                    (fx_ctxt->ops.stop != NULL))
-                    fx_ctxt->ops.stop(fx_ctxt, out_ctxt);
-            }
-            out_ctxt->ctl = NULL;
-        }
-        /* set the channel mixer */
-        list_for_each(node, &active_outputs_list) {
-            /* send command to set channel mixer */
-        }
-        /* enable hpx modules */
-        list_for_each(node, &active_outputs_list) {
-            output_context_t *out_ctxt = node_to_item(node,
-                                                      output_context_t,
-                                                      outputs_list_node);
-            offload_hpx_send_params(out_ctxt->ref_ctl,
-                                    OFFLOAD_SEND_HPX_STATE_ON);
-        }
-        /* wait for transition state - 50msec */
-        usleep(50000);
-        /* set ramp up */
-        list_for_each(node, &active_outputs_list) {
-            output_context_t *out_ctxt = node_to_item(node,
-                                                      output_context_t,
-                                                      outputs_list_node);
-            struct soft_volume_params vol;
-            vol.master_gain = 0x2000;
-            offload_transition_soft_volume_send_params(out_ctxt->ref_ctl, vol,
-                              OFFLOAD_SEND_TRANSITION_SOFT_VOLUME_GAIN_MASTER);
-        }
-    } else {
-        /* set ramp down */
-        list_for_each(node, &active_outputs_list) {
-            output_context_t *out_ctxt = node_to_item(node,
-                                                      output_context_t,
-                                                      outputs_list_node);
-            struct soft_volume_params vol;
-            vol.master_gain = 0x0;
-            offload_transition_soft_volume_send_params(out_ctxt->ref_ctl, vol,
-                              OFFLOAD_SEND_TRANSITION_SOFT_VOLUME_GAIN_MASTER);
-        }
-        /* wait for ramp down duration - 30msec */
-        usleep(30000);
-        /* disable effects modules */
-        list_for_each(node, &active_outputs_list) {
-            output_context_t *out_ctxt = node_to_item(node,
-                                                      output_context_t,
-                                                      outputs_list_node);
-            offload_hpx_send_params(out_ctxt->ref_ctl,
-                                    OFFLOAD_SEND_HPX_STATE_OFF);
-        }
-        /* set the channel mixer */
-        list_for_each(node, &active_outputs_list) {
-            /* send command to set channel mixer */
-        }
-        /* enable effects modules */
-        list_for_each(node, &active_outputs_list) {
-            struct listnode *fx_node;
-            output_context_t *out_ctxt = node_to_item(node,
-                                                      output_context_t,
-                                                      outputs_list_node);
-            out_ctxt->ctl = out_ctxt->ref_ctl;
-            list_for_each(fx_node, &out_ctxt->effects_list) {
-                effect_context_t *fx_ctxt = node_to_item(fx_node,
-                                                         effect_context_t,
-                                                         output_node);
-                if ((fx_ctxt->state == EFFECT_STATE_ACTIVE) &&
-                    (fx_ctxt->ops.start != NULL))
-                    fx_ctxt->ops.start(fx_ctxt, out_ctxt);
-            }
-        }
-        /* wait for transition state - 50msec */
-        usleep(50000);
-        /* set ramp up */
-        list_for_each(node, &active_outputs_list) {
-            output_context_t *out_ctxt = node_to_item(node,
-                                                      output_context_t,
-                                                      outputs_list_node);
-            struct soft_volume_params vol;
-            vol.master_gain = 0x2000;
-            offload_transition_soft_volume_send_params(out_ctxt->ref_ctl, vol,
-                              OFFLOAD_SEND_TRANSITION_SOFT_VOLUME_GAIN_MASTER);
-        }
-    }
-
-exit:
-    pthread_mutex_unlock(&lock);
-    return ret;
-}
-
-/*
- * Effect Bundle Set and get param operations.
- * currently only handles audio sphere scenario,
- * but the interface itself can be utilized for any effect.
- */
-__attribute__ ((visibility ("default")))
-void offload_effects_bundle_get_parameters(struct str_parms *query,
-                                           struct str_parms *reply)
-{
-    asphere_get_parameters(query, reply);
-}
-
-__attribute__ ((visibility ("default")))
-void offload_effects_bundle_set_parameters(struct str_parms *parms)
-{
-    asphere_set_parameters(parms);
-}
 
 /*
  * Effect operations
@@ -520,16 +333,12 @@ int effect_lib_create(const effect_uuid_t *uuid,
         sizeof(effect_uuid_t)) == 0) {
         equalizer_context_t *eq_ctxt = (equalizer_context_t *)
                                        calloc(1, sizeof(equalizer_context_t));
-        if (eq_ctxt == NULL) {
-            return -ENOMEM;
-        }
         context = (effect_context_t *)eq_ctxt;
         context->ops.init = equalizer_init;
         context->ops.reset = equalizer_reset;
         context->ops.set_parameter = equalizer_set_parameter;
         context->ops.get_parameter = equalizer_get_parameter;
         context->ops.set_device = equalizer_set_device;
-        context->ops.set_hw_acc_mode = equalizer_set_mode;
         context->ops.enable = equalizer_enable;
         context->ops.disable = equalizer_disable;
         context->ops.start = equalizer_start;
@@ -539,40 +348,31 @@ int effect_lib_create(const effect_uuid_t *uuid,
         eq_ctxt->ctl = NULL;
     } else if (memcmp(uuid, &bassboost_descriptor.uuid,
                sizeof(effect_uuid_t)) == 0) {
-        bass_context_t *bass_ctxt = (bass_context_t *)
-                                         calloc(1, sizeof(bass_context_t));
-        if (bass_ctxt == NULL) {
-            return -ENOMEM;
-        }
+        bassboost_context_t *bass_ctxt = (bassboost_context_t *)
+                                         calloc(1, sizeof(bassboost_context_t));
         context = (effect_context_t *)bass_ctxt;
-        context->ops.init = bass_init;
-        context->ops.reset = bass_reset;
-        context->ops.set_parameter = bass_set_parameter;
-        context->ops.get_parameter = bass_get_parameter;
-        context->ops.set_device = bass_set_device;
-        context->ops.set_hw_acc_mode = bass_set_mode;
-        context->ops.enable = bass_enable;
-        context->ops.disable = bass_disable;
-        context->ops.start = bass_start;
-        context->ops.stop = bass_stop;
+        context->ops.init = bassboost_init;
+        context->ops.reset = bassboost_reset;
+        context->ops.set_parameter = bassboost_set_parameter;
+        context->ops.get_parameter = bassboost_get_parameter;
+        context->ops.set_device = bassboost_set_device;
+        context->ops.enable = bassboost_enable;
+        context->ops.disable = bassboost_disable;
+        context->ops.start = bassboost_start;
+        context->ops.stop = bassboost_stop;
 
         context->desc = &bassboost_descriptor;
-        bass_ctxt->bassboost_ctxt.ctl = NULL;
-        bass_ctxt->pbe_ctxt.ctl = NULL;
+        bass_ctxt->ctl = NULL;
     } else if (memcmp(uuid, &virtualizer_descriptor.uuid,
                sizeof(effect_uuid_t)) == 0) {
         virtualizer_context_t *virt_ctxt = (virtualizer_context_t *)
                                            calloc(1, sizeof(virtualizer_context_t));
-        if (virt_ctxt == NULL) {
-            return -ENOMEM;
-        }
         context = (effect_context_t *)virt_ctxt;
         context->ops.init = virtualizer_init;
         context->ops.reset = virtualizer_reset;
         context->ops.set_parameter = virtualizer_set_parameter;
         context->ops.get_parameter = virtualizer_get_parameter;
         context->ops.set_device = virtualizer_set_device;
-        context->ops.set_hw_acc_mode = virtualizer_set_mode;
         context->ops.enable = virtualizer_enable;
         context->ops.disable = virtualizer_disable;
         context->ops.start = virtualizer_start;
@@ -590,16 +390,12 @@ int effect_lib_create(const effect_uuid_t *uuid,
                 sizeof(effect_uuid_t)) == 0)) {
         reverb_context_t *reverb_ctxt = (reverb_context_t *)
                                         calloc(1, sizeof(reverb_context_t));
-        if (reverb_ctxt == NULL) {
-            return -ENOMEM;
-        }
         context = (effect_context_t *)reverb_ctxt;
         context->ops.init = reverb_init;
         context->ops.reset = reverb_reset;
         context->ops.set_parameter = reverb_set_parameter;
         context->ops.get_parameter = reverb_get_parameter;
         context->ops.set_device = reverb_set_device;
-        context->ops.set_hw_acc_mode = reverb_set_mode;
         context->ops.enable = reverb_enable;
         context->ops.disable = reverb_disable;
         context->ops.start = reverb_start;
@@ -623,29 +419,6 @@ int effect_lib_create(const effect_uuid_t *uuid,
             reverb_preset_init(reverb_ctxt);
         }
         reverb_ctxt->ctl = NULL;
-#ifdef HW_ACCELERATED_EFFECTS
-    } else if (memcmp(uuid, &hw_accelerator_descriptor.uuid,
-               sizeof(effect_uuid_t)) == 0) {
-        hw_accelerator_context_t *hw_acc_ctxt = (hw_accelerator_context_t *)
-                                   calloc(1, sizeof(hw_accelerator_context_t));
-        if (hw_acc_ctxt == NULL) {
-            ALOGE("h/w acc context allocation failed");
-            return -ENOMEM;
-        }
-        context = (effect_context_t *)hw_acc_ctxt;
-        context->ops.init = hw_accelerator_init;
-        context->ops.reset = hw_accelerator_reset;
-        context->ops.set_parameter = hw_accelerator_set_parameter;
-        context->ops.get_parameter = hw_accelerator_get_parameter;
-        context->ops.set_device = hw_accelerator_set_device;
-        context->ops.set_hw_acc_mode = hw_accelerator_set_mode;
-        context->ops.enable = hw_accelerator_enable;
-        context->ops.disable = hw_accelerator_disable;
-        context->ops.release = hw_accelerator_release;
-        context->ops.process = hw_accelerator_process;
-
-        context->desc = &hw_accelerator_descriptor;
-#endif
     } else {
         return -EINVAL;
     }
@@ -733,7 +506,6 @@ int effect_lib_get_descriptor(const effect_uuid_t *uuid,
  */
 
 /* Stub function for effect interface: never called for offloaded effects */
-/* called for hw accelerated effects */
 int effect_process(effect_handle_t self,
                        audio_buffer_t *inBuffer __unused,
                        audio_buffer_t *outBuffer __unused)
@@ -741,7 +513,7 @@ int effect_process(effect_handle_t self,
     effect_context_t * context = (effect_context_t *)self;
     int status = 0;
 
-    ALOGV("%s", __func__);
+    ALOGW("%s Called ?????", __func__);
 
     pthread_mutex_lock(&lock);
     if (!effect_exists(context)) {
@@ -754,8 +526,6 @@ int effect_process(effect_handle_t self,
         goto exit;
     }
 
-    if (context->ops.process)
-        status = context->ops.process(context, inBuffer, outBuffer);
 exit:
     pthread_mutex_unlock(&lock);
     return status;
@@ -776,7 +546,6 @@ int effect_command(effect_handle_t self, uint32_t cmdCode, uint32_t cmdSize,
         goto exit;
     }
 
-    ALOGV("%s: ctxt %p, cmd %d", __func__, context, cmdCode);
     if (context == NULL || context->state == EFFECT_STATE_UNINITIALIZED) {
         status = -ENOSYS;
         goto exit;
@@ -807,7 +576,7 @@ int effect_command(effect_handle_t self, uint32_t cmdCode, uint32_t cmdSize,
             status = -EINVAL;
             goto exit;
         }
-        if (!context->offload_enabled && !context->hw_acc_enabled) {
+        if (!context->offload_enabled) {
             status = -EINVAL;
             goto exit;
         }
@@ -827,10 +596,10 @@ int effect_command(effect_handle_t self, uint32_t cmdCode, uint32_t cmdSize,
             status = -ENOSYS;
             goto exit;
         }
-        handle_asphere_on_effect_enabled(true, context, &created_effects_list);
         context->state = EFFECT_STATE_ACTIVE;
         if (context->ops.enable)
             context->ops.enable(context);
+        ALOGV("%s EFFECT_CMD_ENABLE", __func__);
         *(int *)pReplyData = 0;
         break;
     case EFFECT_CMD_DISABLE:
@@ -842,10 +611,10 @@ int effect_command(effect_handle_t self, uint32_t cmdCode, uint32_t cmdSize,
             status = -ENOSYS;
             goto exit;
         }
-        handle_asphere_on_effect_enabled(false, context, &created_effects_list);
         context->state = EFFECT_STATE_INITIALIZED;
         if (context->ops.disable)
             context->ops.disable(context);
+        ALOGV("%s EFFECT_CMD_DISABLE", __func__);
         *(int *)pReplyData = 0;
         break;
     case EFFECT_CMD_GET_PARAM: {
@@ -856,11 +625,11 @@ int effect_command(effect_handle_t self, uint32_t cmdCode, uint32_t cmdSize,
             // constrain memcpy below
             ((effect_param_t *)pCmdData)->psize > *replySize - sizeof(effect_param_t)) {
             status = -EINVAL;
-            ALOGW("EFFECT_CMD_GET_PARAM invalid command cmdSize %d *replySize %d",
+            ALOGV("EFFECT_CMD_GET_PARAM invalid command cmdSize %d *replySize %d",
                   cmdSize, *replySize);
             goto exit;
         }
-        if (!context->offload_enabled && !context->hw_acc_enabled) {
+        if (!context->offload_enabled) {
             status = -EINVAL;
             goto exit;
         }
@@ -876,7 +645,7 @@ int effect_command(effect_handle_t self, uint32_t cmdCode, uint32_t cmdSize,
                             sizeof(uint16_t)) ||
             pReplyData == NULL || *replySize != sizeof(int32_t)) {
             status = -EINVAL;
-            ALOGW("EFFECT_CMD_SET_PARAM invalid command cmdSize %d *replySize %d",
+            ALOGV("EFFECT_CMD_SET_PARAM invalid command cmdSize %d *replySize %d",
                   cmdSize, *replySize);
             goto exit;
         }
@@ -892,7 +661,7 @@ int effect_command(effect_handle_t self, uint32_t cmdCode, uint32_t cmdSize,
         ALOGV("\t EFFECT_CMD_SET_DEVICE start");
         if (pCmdData == NULL || cmdSize < sizeof(uint32_t)) {
             status = -EINVAL;
-            ALOGW("EFFECT_CMD_SET_DEVICE invalid command cmdSize %d", cmdSize);
+            ALOGV("EFFECT_CMD_SET_DEVICE invalid command cmdSize %d", cmdSize);
             goto exit;
         }
         device = *(uint32_t *)pCmdData;
@@ -908,7 +677,7 @@ int effect_command(effect_handle_t self, uint32_t cmdCode, uint32_t cmdSize,
 
         if (cmdSize != sizeof(effect_offload_param_t) || pCmdData == NULL
                 || pReplyData == NULL || *replySize != sizeof(int)) {
-            ALOGW("%s EFFECT_CMD_OFFLOAD bad format", __func__);
+            ALOGV("%s EFFECT_CMD_OFFLOAD bad format", __func__);
             status = -EINVAL;
             break;
         }
@@ -934,22 +703,8 @@ int effect_command(effect_handle_t self, uint32_t cmdCode, uint32_t cmdSize,
             add_effect_to_output(out_ctxt, context);
 
         } break;
-#ifdef HW_ACCELERATED_EFFECTS
-    case EFFECT_CMD_HW_ACC: {
-        ALOGV("EFFECT_CMD_HW_ACC cmdSize %d pCmdData %p, *replySize %d, pReplyData %p",
-              cmdSize, pCmdData, *replySize, pReplyData);
-        if (cmdSize != sizeof(uint32_t) || pCmdData == NULL
-                || pReplyData == NULL || *replySize != sizeof(int)) {
-            return -EINVAL;
-        }
-        uint32_t value = *(uint32_t *)pCmdData;
-        if (context->ops.set_hw_acc_mode)
-            context->ops.set_hw_acc_mode(context, value);
 
-        context->hw_acc_enabled = (value > 0) ? true : false;
-        break;
-    }
-#endif
+
     default:
         if (cmdCode >= EFFECT_CMD_FIRST_PROPRIETARY && context->ops.command)
             status = context->ops.command(context, cmdCode, cmdSize,
@@ -998,7 +753,7 @@ audio_effect_library_t AUDIO_EFFECT_LIBRARY_INFO_SYM = {
     tag : AUDIO_EFFECT_LIBRARY_TAG,
     version : EFFECT_LIBRARY_API_VERSION,
     name : "Offload Effects Bundle Library",
-    implementor : "The Linux Foundation",
+    implementor : "The Android Open Source Project",
     create_effect : effect_lib_create,
     release_effect : effect_lib_release,
     get_descriptor : effect_lib_get_descriptor,
