@@ -51,6 +51,7 @@
 #include "platform_api.h"
 #include <platform.h>
 #include "voice_extn.h"
+#include "ultrasound.h"
 
 #include "sound/compress_params.h"
 #include "audio_extn/tfa_98xx.h"
@@ -214,8 +215,9 @@ const char * const use_case_table[AUDIO_USECASE_MAX] = {
 
     [USECASE_AUDIO_PLAYBACK_AFE_PROXY] = "afe-proxy-playback",
     [USECASE_AUDIO_RECORD_AFE_PROXY] = "afe-proxy-record",
+    [USECASE_AUDIO_ULTRASOUND_RX] = "ultrasound-rx",
+    [USECASE_AUDIO_ULTRASOUND_TX] = "ultrasound-tx",
 };
-
 
 #define STRING_TO_ENUM(string) { #string, string }
 
@@ -561,6 +563,10 @@ int enable_audio_route(struct audio_device *adev,
         snd_device = usecase->out_snd_device;
 
     audio_extn_utils_send_app_type_cfg(adev, usecase);
+#ifdef ELLIPTIC_ULTRASOUND_ENABLED
+    if (usecase->id != USECASE_AUDIO_ULTRASOUND_RX &&
+        usecase->id != USECASE_AUDIO_ULTRASOUND_TX)
+#endif
     strcpy(mixer_path, use_case_table[usecase->id]);
     platform_add_backend_name(adev->platform, mixer_path, snd_device);
     ALOGD("%s: usecase(%d) apply and update mixer path: %s", __func__,  usecase->id, mixer_path);
@@ -3201,6 +3207,25 @@ static int adev_set_parameters(struct audio_hw_device *dev, const char *kvpairs)
             adev->screen_off = true;
     }
 
+    ret = str_parms_get_int(parms, "ultrasound_enable", &val);
+    if (ret >= 0) {
+        if (val == 1) {
+            us_start();
+        } else {
+            us_stop();
+        }
+    }
+
+    ret = str_parms_get_int(parms, "ultrasound_set_manual_calibration", &val);
+    if (ret >= 0) {
+        us_set_manual_cal(val);
+    }
+
+    ret = str_parms_get_int(parms, "ultrasound_set_sensitivity", &val);
+    if (ret >= 0) {
+        us_set_sensitivity(val);
+    }
+
     ret = str_parms_get_int(parms, "rotation", &val);
     if (ret >= 0) {
         bool reverse_speakers = false;
@@ -3690,7 +3715,7 @@ static int adev_close(hw_device_t *device)
             adev->adm_deinit(adev->adm_data);
         free(device);
     }
-
+    us_deinit();
     pthread_mutex_unlock(&adev_init_lock);
 
     return 0;
@@ -3868,6 +3893,8 @@ static int adev_open(const hw_module_t *module, const char *name,
 
     adev->bt_wb_speech_enabled = false;
     adev->enable_voicerx = false;
+
+    us_init(adev);
 
     *device = &adev->device.common;
 
